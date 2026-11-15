@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Hello, {{ user.first_name|default:user.username }} 👋</h1>
+    <p class="muted">Here's a summary of your lost &amp; found activity.</p>
+  </div>
+  <div class="head-actions">
+    <a href="{% url 'items:my_items' %}" class="btn btn-ghost">My Items</a>
+    <a href="{% url 'items:create_item' %}" class="btn btn-primary">+ Report an Item</a>
+  </div>
+</div>
+
+{# FR-27, FR-28, FR-29 #}
+<div class="summary-grid">
+  <a class="summary-card" href="{% url 'items:my_items' %}?tab=reports">
+    <span class="summary-icon" aria-hidden="true">📝</span>
+    <span class="summary-num" data-countup>{{ summary.total_reports }}</span>
+    <span class="summary-label">Reports created</span>
+    <span class="summary-sub muted small">{{ breakdown.open }} open · {{ breakdown.claim_pending }} claim pending · {{ breakdown.resolved }} resolved</span>
+  </a>
+  <a class="summary-card accent-amber" href="#received">
+    <span class="summary-icon" aria-hidden="true">📥</span>
+    <span class="summary-num" data-countup>{{ summary.pending_claims_received }}</span>
+    <span class="summary-label">Pending claims on your reports</span>
+    <span class="summary-sub muted small">Awaiting your review</span>
+  </a>
+  <a class="summary-card accent-teal" href="{% url 'items:my_items' %}?tab=claims">
+    <span class="summary-icon" aria-hidden="true">📤</span>
+    <span class="summary-num" data-countup>{{ summary.claims_submitted }}</span>
+    <span class="summary-label">Claims you submitted</span>
+    <span class="summary-sub muted small">Track their status in My Items</span>
+  </a>
+</div>
+
+<section class="card" id="received">
+  <div class="section-head">
+    <h2>Claims received on your reports</h2>
+  </div>
+  {% if received_claims %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Item</th><th>Claimant</th><th>Explanation</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for claim in received_claims %}
+        <tr>
+          <td><a class="table-title" href="{{ claim.item.get_absolute_url }}#claims">{{ claim.item.title }}</a><div class="muted small">{{ claim.created_at|date:"d M Y, H:i" }}</div></td>
+          <td>{{ claim.claimant.username }}</td>
+          <td class="small">{{ claim.message|truncatechars:100 }}</td>
+          <td><span class="badge badge-{{ claim.status_css }}">{{ claim.get_status_display }}</span></td>
+          <td>{% include "partials/_claim_actions.html" with next_url=request.get_full_path %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="muted">No one has claimed any of your reports yet.</p>
+  {% endif %}
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <div class="section-head"><h2>Your recent reports</h2><a class="link-arrow" href="{% url 'items:my_items' %}">View all →</a></div>
+    {% if recent_reports %}
+      <ul class="mini-list">
+        {% for item in recent_reports %}
+        <li>
+          <a href="{{ item.get_absolute_url }}"><span aria-hidden="true">{{ item.category_icon }}</span> {{ item.title }}</a>
+          <span class="tag tag-{{ item.report_type|lower }}">{{ item.get_report_type_display }}</span>
+          <span class="badge badge-{{ item.status_css }}">{{ item.get_status_display }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No reports yet. <a href="{% url 'items:create_item' %}">Report an item</a>.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>Your recent claims</h2><a class="link-arrow" href="{% url 'items:my_items' %}?tab=claims">View all →</a></div>
+    {% if recent_claims %}
+      <ul class="mini-list">
+        {% for claim in recent_claims %}
+        <li>
+          <a href="{{ claim.item.get_absolute_url }}"><span aria-hidden="true">{{ claim.item.category_icon }}</span> {{ claim.item.title }}</a>
+          <span class="badge badge-{{ claim.status_css }}">{{ claim.get_status_display }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No claims yet. <a href="{% url 'items:item_list' %}?type=FOUND">Browse found items</a>.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

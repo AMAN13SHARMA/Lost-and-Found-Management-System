@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <div class="auth-head">
+      <span class="brand-mark big" aria-hidden="true">🔎</span>
+      <h1>Welcome back</h1>
+      <p class="muted">Log in to report items, submit claims and view your dashboard.</p>
+    </div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% if form.non_field_errors %}
+        <div class="alert alert-error inline-alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+      {% endif %}
+      {% include "partials/_field.html" with field=form.username %}
+      <div class="field{% if form.password.errors %} has-error{% endif %}">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        <div class="password-wrap">
+          {{ form.password }}
+          <button type="button" class="password-toggle" data-toggle-password aria-label="Show password">👁</button>
+        </div>
+        {% for error in form.password.errors %}<small class="error">{{ error }}</small>{% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Log in</button>
+    </form>
+    <p class="auth-foot">New here? <a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

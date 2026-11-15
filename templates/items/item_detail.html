@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{% url 'items:item_list' %}">Browse Items</a> <span aria-hidden="true">/</span> <span>{{ item.title|truncatechars:40 }}</span>
+</nav>
+
+<div class="detail-layout">
+  <section class="detail-main card">
+    <div class="detail-photo">
+      {% if item.photo %}
+        <a href="{{ item.photo.url }}" target="_blank" rel="noopener" title="Open full-size photo">
+          <img src="{{ item.photo.url }}" alt="Photo of {{ item.title }}">
+        </a>
+      {% else %}
+        <div class="photo-placeholder"><span aria-hidden="true">{{ item.category_icon }}</span><small>No photo provided</small></div>
+      {% endif %}
+    </div>
+
+    <div class="detail-content">
+      <div class="detail-tags">
+        <span class="tag tag-{{ item.report_type|lower }}">{{ item.get_report_type_display }}</span>
+        <span class="badge badge-{{ item.status_css }}">{{ item.get_status_display }}</span>
+      </div>
+      <h1 class="detail-title">{{ item.title }}</h1>
+
+      <dl class="detail-grid">
+        <div><dt>Category</dt><dd>{{ item.category_icon }} {{ item.category }}</dd></div>
+        <div><dt>Location {{ item.is_lost|yesno:"lost,found" }}</dt><dd>📍 {{ item.location }}</dd></div>
+        <div><dt>Date {{ item.is_lost|yesno:"lost,found" }}</dt><dd>📅 {{ item.date_lost_found|date:"l, d F Y" }}</dd></div>
+        <div><dt>Contact method</dt><dd>
+          {% if user.is_authenticated %}☎️ {{ item.contact_method }}{% else %}<a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Log in</a> to see contact details{% endif %}
+        </dd></div>
+        {% if item.collection_point %}<div><dt>Collection point</dt><dd>🏢 {{ item.collection_point }}</dd></div>{% endif %}
+        <div><dt>Reported by</dt><dd>👤 {{ item.created_by.username }}</dd></div>
+      </dl>
+
+      <h2 class="h3">Description</h2>
+      <p class="description">{{ item.description|linebreaksbr }}</p>
+
+      <p class="muted small timestamps">
+        Reported {{ item.created_at|date:"d M Y, H:i" }} · Last updated {{ item.updated_at|date:"d M Y, H:i" }}
+      </p>
+    </div>
+  </section>
+
+  <aside class="detail-side">
+    {# ---------- Owner / staff management panel (UI-03, FR-31) ---------- #}
+    {% if can_manage %}
+      <div class="card side-card">
+        <h2 class="h3">{% if is_owner %}Your report{% else %}Staff actions{% endif %}</h2>
+        {% if item.is_resolved %}
+          <p class="resolved-note">✔ This report has been marked as resolved.</p>
+        {% else %}
+          <p class="muted small">Once the item has been handed over (outside the system), mark this report as resolved. It will be removed from the public listing.</p>
+          <form method="post" action="{% url 'items:mark_resolved' item.pk %}" data-confirm="Mark this report as RESOLVED? It will no longer appear in the public listing.">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-block">✔ Mark as Resolved</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {# ---------- Claim panel for other users (FR-17 .. FR-22, UI-03) ---------- #}
+    {% if not is_owner %}
+      <div class="card side-card" id="claim">
+        {% if user_claim %}
+          <h2 class="h3">Your claim</h2>
+          <p>Status: <span class="badge badge-{{ user_claim.status_css }}">{{ user_claim.get_status_display }}</span></p>
+          <blockquote class="claim-msg">{{ user_claim.message|linebreaksbr }}</blockquote>
+          <p class="muted small">Submitted {{ user_claim.created_at|date:"d M Y, H:i" }}</p>
+          {% if user_claim.status == 'APPROVED' %}
+            <p class="note">Your claim was approved. Contact the reporter using the contact method above and meet at a safe campus location to collect the item.</p>
+          {% endif %}
+        {% elif claim_form %}
+          <h2 class="h3">{% if item.is_found %}Is this yours?{% else %}Submit a claim{% endif %}</h2>
+          <p class="muted small">Explain why this item belongs to you. The report creator will review your explanation.</p>
+          <form method="post" action="{% url 'claims:submit_claim' item.pk %}" novalidate>
+            {% csrf_token %}
+            {% include "partials/_field.html" with field=claim_form.message %}
+            <button type="submit" class="btn btn-primary btn-block">Submit Claim Request</button>
+          </form>
+        {% elif claim_block_reason %}
+          <h2 class="h3">Claims</h2>
+          <p class="muted">{{ claim_block_reason }}</p>
+        {% elif not user.is_authenticated %}
+          <h2 class="h3">{% if item.is_found %}Is this yours?{% else %}Submit a claim{% endif %}</h2>
+          <p class="muted small">You need an account to submit a claim request.</p>
+          <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" class="btn btn-primary btn-block">Log in to claim</a>
+          <a href="{% url 'accounts:register' %}?next={{ request.path|urlencode }}" class="btn btn-ghost btn-block">Create an account</a>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="card side-card safety">
+      <h2 class="h4">🛡️ Safety tips</h2>
+      <ul class="small">
+        <li>Meet at a public, safe campus location for handover.</li>
+        <li>Ask for identifying details before handing over an item.</li>
+        <li>Avoid sharing full ID numbers or sensitive personal data.</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+{# ---------- Claim review list for creator / staff (FR-23 .. FR-26) ---------- #}
+{% if can_manage %}
+<section class="card claims-section" id="claims">
+  <div class="section-head">
+    <h2>Claim requests {% if claims %}<span class="count-pill">{{ claims|length }}</span>{% endif %}</h2>
+    {% if pending_count %}<span class="badge badge-pending">{{ pending_count }} pending</span>{% endif %}
+  </div>
+  {% if claims %}
+    <ul class="claim-list">
+      {% for claim in claims %}
+      <li class="claim-row">
+        <div class="claim-head">
+          <span class="avatar" aria-hidden="true">{{ claim.claimant.username|first|upper }}</span>
+          <div>
+            <strong>{{ claim.claimant.username }}</strong>
+            {% if claim.claimant.email %}<span class="muted small">· {{ claim.claimant.email }}</span>{% endif %}
+            <div class="muted small">{{ claim.created_at|date:"d M Y, H:i" }}</div>
+          </div>
+          <span class="badge badge-{{ claim.status_css }}">{{ claim.get_status_display }}</span>
+        </div>
+        <blockquote class="claim-msg">{{ claim.message|linebreaksbr }}</blockquote>
+        {% include "partials/_claim_actions.html" with next_url=request.get_full_path %}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="muted small">Approving a claim does not resolve the report. After the physical handover, use <em>Mark as Resolved</em>.</p>
+  {% else %}
+    <p class="muted">No claim requests have been submitted for this report yet.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

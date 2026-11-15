@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Browse Items{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Browse lost &amp; found items</h1>
+    <p class="muted">Showing open and claim-pending reports. Resolved reports are hidden.</p>
+  </div>
+  <a href="{% url 'items:create_item' %}" class="btn btn-primary">+ Report an Item</a>
+</div>
+
+<form method="get" class="filter-bar card" role="search" id="filter-form">
+  <div class="filter-field filter-q">
+    <label for="{{ form.q.id_for_label }}">Keyword</label>
+    {{ form.q }}
+  </div>
+  <div class="filter-field">
+    <label for="{{ form.type.id_for_label }}">Report type</label>
+    {{ form.type }}
+  </div>
+  <div class="filter-field">
+    <label for="{{ form.category.id_for_label }}">Category</label>
+    {{ form.category }}
+  </div>
+  <div class="filter-field">
+    <label for="{{ form.location.id_for_label }}">Location</label>
+    {{ form.location }}
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Apply</button>
+    {% if is_filtered %}<a href="{% url 'items:item_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="type-tabs" role="tablist" aria-label="Quick report type filter">
+  {% with cur=request.GET.type|default:'' %}
+  <a role="tab" class="type-tab {% if cur == '' %}active{% endif %}" href="?{% querystring type=None page=None %}">All</a>
+  <a role="tab" class="type-tab type-lost {% if cur == 'LOST' %}active{% endif %}" href="?{% querystring type='LOST' page=None %}">Lost</a>
+  <a role="tab" class="type-tab type-found {% if cur == 'FOUND' %}active{% endif %}" href="?{% querystring type='FOUND' page=None %}">Found</a>
+  {% endwith %}
+  <span class="result-count muted">{{ total }} result{{ total|pluralize }}</span>
+</div>
+
+{% if items %}
+  <div class="item-grid">
+    {% for item in items %}{% include "partials/_item_card.html" %}{% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="pagination" aria-label="Pagination">
+    {% if page_obj.has_previous %}
+      <a class="btn btn-ghost btn-sm" href="?{% querystring page=page_obj.previous_page_number %}">← Previous</a>
+    {% endif %}
+    <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn btn-ghost btn-sm" href="?{% querystring page=page_obj.next_page_number %}">Next →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% else %}
+  <div class="empty-state">
+    <span class="empty-icon" aria-hidden="true">🔍</span>
+    <h3>No matching reports</h3>
+    <p>Try a different keyword or remove some filters.{% if user.is_authenticated %} You can also report your item so others can find it.{% endif %}</p>
+    <a href="{% url 'items:create_item' %}" class="btn btn-primary">Report an Item</a>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block content %}
+<div class="empty-state error-page">
+  <span class="empty-icon" aria-hidden="true">🧭</span>
+  <h1>Page not found</h1>
+  <p>The page or item you're looking for doesn't exist or may have been removed.</p>
+  <a href="{% url 'items:item_list' %}" class="btn btn-primary">Browse items</a>
+</div>
+{% endblock %}

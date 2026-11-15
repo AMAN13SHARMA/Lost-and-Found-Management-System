@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block main_class %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow">National Institute of Technology Calicut</p>
+      <h1>Lost something on campus?<br><span class="accent">Found something?</span></h1>
+      <p class="lead">One central place for students, faculty and staff of NITC to report lost and found belongings, search existing reports and claim what's theirs.</p>
+
+      <form class="hero-search" method="get" action="{% url 'items:item_list' %}" role="search">
+        <input type="search" name="q" placeholder="Search e.g. ID card, keys, charger, library..." aria-label="Search items">
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+
+      <div class="hero-actions">
+        <a class="btn btn-lost" href="{% url 'items:create_item' %}?type=LOST">I lost an item</a>
+        <a class="btn btn-found" href="{% url 'items:create_item' %}?type=FOUND">I found an item</a>
+      </div>
+    </div>
+
+    <div class="hero-stats" aria-label="Statistics">
+      <div class="stat-card stat-lost"><span class="stat-num">{{ stats.lost }}</span><span class="stat-label">Open lost reports</span></div>
+      <div class="stat-card stat-found"><span class="stat-num">{{ stats.found }}</span><span class="stat-label">Open found reports</span></div>
+      <div class="stat-card stat-resolved"><span class="stat-num">{{ stats.resolved }}</span><span class="stat-label">Items resolved</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="container page">
+  <div class="section-head">
+    <h2>Recent reports</h2>
+    <a href="{% url 'items:item_list' %}" class="link-arrow">Browse all items →</a>
+  </div>
+
+  {% if recent_items %}
+    <div class="item-grid">
+      {% for item in recent_items %}{% include "partials/_item_card.html" %}{% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <span class="empty-icon" aria-hidden="true">📭</span>
+      <h3>No open reports yet</h3>
+      <p>Be the first to report a lost or found item on campus.</p>
+      <a href="{% url 'items:create_item' %}" class="btn btn-primary">Report an Item</a>
+    </div>
+  {% endif %}
+</section>
+
+<section class="container page how-it-works">
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><span class="step-num">1</span><h3>Report</h3><p>Post a lost or found item with its category, location, date and an optional photo.</p></li>
+    <li><span class="step-num">2</span><h3>Search</h3><p>Search by keyword and filter by report type, category or location.</p></li>
+    <li><span class="step-num">3</span><h3>Claim</h3><p>Found your item? Submit a claim explaining why it belongs to you.</p></li>
+    <li><span class="step-num">4</span><h3>Resolve</h3><p>The report creator reviews claims, you meet safely on campus, and the report is marked resolved.</p></li>
+  </ol>
+</section>
+{% endblock %}

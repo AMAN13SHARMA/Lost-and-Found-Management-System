@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="card auth-card wide">
+    <div class="auth-head">
+      <span class="brand-mark big" aria-hidden="true">🎓</span>
+      <h1>Create your account</h1>
+      <p class="muted">For students, faculty members and staff of NITC.</p>
+    </div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% if form.non_field_errors %}
+        <div class="alert alert-error inline-alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+      {% endif %}
+      {% include "partials/_field.html" with field=form.username %}
+      <div class="form-grid">
+        {% include "partials/_field.html" with field=form.first_name %}
+        {% include "partials/_field.html" with field=form.last_name %}
+      </div>
+      {% include "partials/_field.html" with field=form.email %}
+      <div class="form-grid">
+        {% include "partials/_field.html" with field=form.password1 %}
+        {% include "partials/_field.html" with field=form.password2 %}
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Create account</button>
+    </form>
+    <p class="auth-foot">Already have an account? <a href="{% url 'accounts:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Log in</a></p>
+  </div>
+</div>
+{% endblock %}

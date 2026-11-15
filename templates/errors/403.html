@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Access denied{% endblock %}
+{% block content %}
+<div class="empty-state error-page">
+  <span class="empty-icon" aria-hidden="true">🚫</span>
+  <h1>Access denied</h1>
+  <p>You don't have permission to perform this action.</p>
+  <a href="{% url 'items:home' %}" class="btn btn-primary">Back to home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}My Items{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>My Items</h1>
+    <p class="muted">Reports you created and claim requests you submitted.</p>
+  </div>
+  <a href="{% url 'items:create_item' %}" class="btn btn-primary">+ Report an Item</a>
+</div>
+
+<div class="tabs" data-tabs>
+  <div class="tab-list" role="tablist">
+    <button role="tab" class="tab {% if tab == 'reports' %}active{% endif %}" data-tab="reports" aria-selected="{% if tab == 'reports' %}true{% else %}false{% endif %}">My reports <span class="count-pill">{{ my_items|length }}</span></button>
+    <button role="tab" class="tab {% if tab == 'claims' %}active{% endif %}" data-tab="claims" aria-selected="{% if tab == 'claims' %}true{% else %}false{% endif %}">My claims <span class="count-pill">{{ my_claims|length }}</span></button>
+  </div>
+
+  <section class="tab-panel card" data-panel="reports" {% if tab != 'reports' %}hidden{% endif %}>
+    {% if my_items %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Item</th><th>Type</th><th>Status</th><th>Claims</th><th>Reported</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for item in my_items %}
+          <tr>
+            <td><a href="{{ item.get_absolute_url }}" class="table-title">{{ item.category_icon }} {{ item.title }}</a><div class="muted small">📍 {{ item.location|truncatechars:40 }}</div></td>
+            <td><span class="tag tag-{{ item.report_type|lower }}">{{ item.get_report_type_display }}</span></td>
+            <td><span class="badge badge-{{ item.status_css }}">{{ item.get_status_display }}</span></td>
+            <td>{{ item.claim_total }}{% if item.claim_pending %} <span class="badge badge-pending">{{ item.claim_pending }} pending</span>{% endif %}</td>
+            <td class="muted small">{{ item.created_at|date:"d M Y" }}</td>
+            <td class="table-actions">
+              <a href="{{ item.get_absolute_url }}#claims" class="btn btn-ghost btn-sm">View</a>
+              {% if not item.is_resolved %}
+              <form method="post" action="{% url 'items:mark_resolved' item.pk %}" class="inline-form" data-confirm="Mark “{{ item.title }}” as RESOLVED?">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm">Resolve</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state small-empty">
+        <span class="empty-icon" aria-hidden="true">📝</span>
+        <p>You haven't reported any items yet.</p>
+        <a href="{% url 'items:create_item' %}" class="btn btn-primary">Report an Item</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="tab-panel card" data-panel="claims" {% if tab != 'claims' %}hidden{% endif %}>
+    {% if my_claims %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Item</th><th>Reported by</th><th>Your explanation</th><th>Status</th><th>Submitted</th></tr>
+        </thead>
+        <tbody>
+          {% for claim in my_claims %}
+          <tr>
+            <td><a href="{{ claim.item.get_absolute_url }}" class="table-title">{{ claim.item.category_icon }} {{ claim.item.title }}</a>
+              <div><span class="badge badge-{{ claim.item.status_css }}">Item: {{ claim.item.get_status_display }}</span></div></td>
+            <td>{{ claim.item.created_by.username }}</td>
+            <td class="small">{{ claim.message|truncatechars:90 }}</td>
+            <td><span class="badge badge-{{ claim.status_css }}">{{ claim.get_status_display }}</span></td>
+            <td class="muted small">{{ claim.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state small-empty">
+        <span class="empty-icon" aria-hidden="true">🙋</span>
+        <p>You haven't submitted any claim requests yet.</p>
+        <a href="{% url 'items:item_list' %}?type=FOUND" class="btn btn-primary">Browse found items</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

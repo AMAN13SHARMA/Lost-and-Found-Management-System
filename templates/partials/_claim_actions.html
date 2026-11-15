@@ -1,0 +1,19 @@
+{# Approve / Reject buttons for a pending claim (UI-03). Requires: claim, next_url #}
+{% if claim.is_pending %}
+<div class="claim-actions">
+  <form method="post" action="{% url 'claims:decide_claim' claim.pk 'approve' %}" class="inline-form"
+        data-confirm="Approve this claim by {{ claim.claimant.username }}? Approval does not resolve the report and is not automatic proof of ownership.">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+  </form>
+  <form method="post" action="{% url 'claims:decide_claim' claim.pk 'reject' %}" class="inline-form"
+        data-confirm="Reject this claim by {{ claim.claimant.username }}? This cannot be undone.">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+  </form>
+</div>
+{% else %}
+<span class="muted small">Reviewed</span>
+{% endif %}

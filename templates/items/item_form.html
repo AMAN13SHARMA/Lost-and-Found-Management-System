@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Report an Item{% endblock %}
+
+{% block content %}
+<div class="form-page">
+  <div class="page-head">
+    <div>
+      <h1>Report an item</h1>
+      <p class="muted">Fields marked <span class="req">*</span> are required. Your report will be linked to your account.</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="card form-card" id="item-form" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+
+    <fieldset class="field{% if form.report_type.errors %} has-error{% endif %} required">
+      <legend>What would you like to report?</legend>
+      <div class="type-picker">
+        {% for radio in form.report_type %}
+          <label class="type-option type-option-{{ radio.data.value|lower }}">
+            {{ radio.tag }}
+            <span class="type-option-body">
+              <span class="type-option-icon" aria-hidden="true">{% if radio.data.value == 'LOST' %}😟{% else %}🙌{% endif %}</span>
+              <strong>{% if radio.data.value == 'LOST' %}I lost something{% else %}I found something{% endif %}</strong>
+              <small>{% if radio.data.value == 'LOST' %}Let others know what you're looking for{% else %}Help return it to its owner{% endif %}</small>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+      {% for error in form.report_type.errors %}<small class="error">{{ error }}</small>{% endfor %}
+    </fieldset>
+
+    <div class="form-grid">
+      <div class="span-2">{% include "partials/_field.html" with field=form.title %}</div>
+      {% include "partials/_field.html" with field=form.category %}
+      {% include "partials/_field.html" with field=form.date_lost_found %}
+      <div class="span-2">{% include "partials/_field.html" with field=form.description %}</div>
+      {% include "partials/_field.html" with field=form.location %}
+      {% include "partials/_field.html" with field=form.contact_method %}
+      <div class="span-2">{% include "partials/_field.html" with field=form.collection_point %}</div>
+
+      <div class="span-2 field{% if form.photo.errors %} has-error{% endif %}">
+        <label for="{{ form.photo.id_for_label }}">Photo <span class="optional">(optional)</span></label>
+        <div class="dropzone" id="photo-dropzone">
+          <div class="dropzone-preview" id="photo-preview" hidden><img alt="Selected photo preview"></div>
+          <div class="dropzone-text" id="photo-text">
+            <span aria-hidden="true">📷</span>
+            <span>Click to choose or drag a photo here</span>
+            <small class="muted">JPEG, PNG or WebP · max {{ MAX_PHOTO_MB }} MB</small>
+          </div>
+          {{ form.photo }}
+        </div>
+        <small class="error" id="photo-client-error" hidden></small>
+        {% for error in form.photo.errors %}<small class="error">{{ error }}</small>{% endfor %}
+      </div>
+    </div>
+
+    <p class="note small">⚠️ Please avoid including sensitive identifiers (full ID / Aadhaar numbers, bank details) in the description.</p>
+
+    <div class="form-actions">
+      <a href="{% url 'items:item_list' %}" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary">Submit Report</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
