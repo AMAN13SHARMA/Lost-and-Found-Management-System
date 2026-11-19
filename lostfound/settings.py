@@ -11,12 +11,16 @@ DJANGO_DEBUG is set to "False" (see the bottom of this file).
 import os
 from pathlib import Path
 
+import shutil
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def env_bool(name, default=False):
     return os.environ.get(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
+
+IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
 
 # ---------------------------------------------------------------------------
 # Core security settings (NFR-10)
@@ -27,12 +31,23 @@ SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-dev-only-nitc-lost-found-group18-change-me",
 )
-DEBUG = env_bool("DJANGO_DEBUG", True)
+DEBUG = env_bool("DJANGO_DEBUG", not IS_VERCEL)
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,testserver").split(",")
+    for h in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "127.0.0.1,localhost,testserver,.vercel.app",
+    ).split(",")
     if h.strip()
 ]
+if os.environ.get("VERCEL_URL"):
+    ALLOWED_HOSTS.append(os.environ["VERCEL_URL"])
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.vercel.app",
+]
+if os.environ.get("VERCEL_URL"):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['VERCEL_URL']}")
 
 # ---------------------------------------------------------------------------
 # Applications (NFR-13: separation of models, forms, views, urls, templates)
@@ -84,10 +99,22 @@ WSGI_APPLICATION = "lostfound.wsgi.application"
 # ---------------------------------------------------------------------------
 # Database - SQLite (SRS 2.5 / 6.1), managed via Django ORM + migrations
 # ---------------------------------------------------------------------------
+# On Vercel serverless functions, /var/task is read-only and only /tmp is
+# writable. Copy the pre-migrated/seeded db.sqlite3 into /tmp/db.sqlite3 on
+# cold start so writes (login, registration, items, claims) work seamlessly.
+if IS_VERCEL:
+    _bundled_db = BASE_DIR / "db.sqlite3"
+    _tmp_db = Path("/tmp/db.sqlite3")
+    if _bundled_db.exists() and not _tmp_db.exists():
+        shutil.copy2(_bundled_db, _tmp_db)
+    DB_PATH = _tmp_db
+else:
+    DB_PATH = BASE_DIR / "db.sqlite3"
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": DB_PATH,
     }
 }
 
@@ -124,7 +151,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Uploaded photographs are stored as media files; only their reference
 # is kept in the database (SRS 2.1 item 4, 6.1).
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+if IS_VERCEL:
+    MEDIA_ROOT = Path("/tmp/media")
+    _bundled_media = BASE_DIR / "media"
+    if _bundled_media.exists() and not MEDIA_ROOT.exists():
+        shutil.copytree(_bundled_media, MEDIA_ROOT, dirs_exist_ok=True)
+    else:
+        MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+else:
+    MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
