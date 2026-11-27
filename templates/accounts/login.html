@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load static %}
+{% load socialaccount %}
 {% block title %}Log in{% endblock %}
 
 {% block content %}
@@ -22,11 +24,22 @@
           {{ form.password }}
           <button type="button" class="password-toggle" data-toggle-password aria-label="Show password">👁</button>
         </div>
+        <p id="caps-lock-warning" class="small" role="status" hidden>Caps Lock is on. Check your password.</p>
         {% for error in form.password.errors %}<small class="error">{{ error }}</small>{% endfor %}
       </div>
       <button type="submit" class="btn btn-primary btn-block">Log in</button>
     </form>
+    {% if google_login_enabled %}
+    <p class="muted" style="text-align:center;margin:16px 0">or</p>
+    <form method="post" action="{% provider_login_url 'google' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-block" style="background:#fff;color:#202124;border:1px solid #dadce0"> <span aria-hidden="true" style="color:#4285f4;font-weight:bold">G</span> Continue with Google</button>
+    </form>
+    {% endif %}
     <p class="auth-foot">New here? <a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Create an account</a></p>
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/auth-feedback.js' %}" defer></script>{% endblock %}
