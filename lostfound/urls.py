@@ -13,6 +13,7 @@ admin.site.index_title = "Manage users, item reports and claim requests"
 urlpatterns = [
     path("admin/", admin.site.urls),                     # FR-34, FR-35
     path("accounts/", include("accounts.urls")),          # FR-01..FR-05
+    path("accounts/", include("allauth.urls")),
     path("dashboard/", include("dashboard.urls")),        # FR-27..FR-29
     path("claims/", include("claims.urls")),              # FR-17..FR-26
     path("", include("items.urls")),                      # FR-06..FR-16, FR-30..FR-33

@@ -61,7 +61,7 @@ def login_view(request):
         messages.error(request, "Login failed. Please check your credentials.")
     else:
         form = LoginForm(request)
-    return render(request, "accounts/login.html", {"form": form, "next": _safe_next(request) or ""})
+    return render(request, "accounts/login.html", {"form": form, "next": _safe_next(request) or "", "google_login_enabled": settings.GOOGLE_LOGIN_ENABLED})
 
 
 @require_POST

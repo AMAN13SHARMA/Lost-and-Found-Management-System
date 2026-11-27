@@ -96,3 +96,17 @@ Open **http://127.0.0.1:8000/** in your browser (Django Admin: **http://127.0.0.
 ```powershell
 .\venv\Scripts\python.exe manage.py test -v 2
 ```
+
+## Google sign-in (optional)
+Create a Web application OAuth client in Google Cloud Console, configure the consent screen and add test users if needed. Register the exact redirect URI `http://127.0.0.1:8000/accounts/google/login/callback/`. For a deployed HTTPS host use its corresponding callback URI.
+
+PowerShell (from the project directory):
+```powershell
+pip install -r requirements.txt
+$env:GOOGLE_CLIENT_ID = "your-client-id"
+$env:GOOGLE_CLIENT_SECRET = "your-client-secret"
+python manage.py migrate
+python manage.py check
+python manage.py runserver
+```
+Open the existing login page and select Continue with Google. Without credentials, normal login remains available and the Google button is hidden. Never commit credentials. Existing password accounts are not automatically linked by email; Google sign-in does not grant staff privileges. Use a persistent database and secure secret key for production; the existing Vercel temporary SQLite demo is not suitable for reliable OAuth sessions.
